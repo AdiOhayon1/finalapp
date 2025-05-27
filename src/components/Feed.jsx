@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FaSearch, FaPlus, FaUser } from "react-icons/fa";
 import SearchBar from "./SearchBar"; // ודא שהנתיב נכון
 import "./SideNavBar.css"; // עיצוב הלחצנים בצד
+import AddPost from "./add-post/AddPost";
 
 const Feed = ({ posts }) => {
   const navigate = useNavigate();
@@ -26,17 +27,14 @@ const Feed = ({ posts }) => {
         <button onClick={toggleSearch}>
           <FaSearch />
         </button>
-        <button onClick={handleNavigateToAddPost}>
-          <FaPlus />
-        </button>
         <button onClick={handleNavigateToProfile}>
           <FaUser />
         </button>
       </div>
 
-      {/* תוכן הפיד */}
       <div className="feed-content">
         <h1>Welcome to PostPassport</h1>
+        <AddPost />
         {posts && posts.length > 0 ? (
           posts.map((post) => (
             <div key={post.id} className="post-card">

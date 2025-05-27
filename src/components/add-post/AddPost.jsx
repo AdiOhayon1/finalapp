@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { auth } from "../firebaseConfig"; // ודאי שזה הנתיב הנכון
+import { auth } from "../../firebaseConfig";
+import "./add-post.css";
 
 const AddPost = () => {
   const [file, setFile] = useState(null);
@@ -32,22 +33,28 @@ const AddPost = () => {
   };
 
   return (
-    <form className="add-post form-container" onSubmit={handleUpload}>
-      <h2>Upload a photo</h2>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setFile(e.target.files[0])}
-        required
-      />
-      <input
-        type="text"
-        placeholder="Caption"
-        value={caption}
-        onChange={(e) => setCaption(e.target.value)}
-        required
-      />
-      <button type="submit">Upload</button>
+    <form className="wrapper" onSubmit={handleUpload}>
+      <h2>Create Post</h2>
+      <div className="form">
+        <div className="input">
+          <input
+            type="text"
+            placeholder="Caption"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            required
+          />
+        </div>
+        <div className="uplaod-file">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            required
+          />
+        </div>
+        <button type="submit">Create</button>
+      </div>
     </form>
   );
 };
