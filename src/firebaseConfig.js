@@ -1,8 +1,6 @@
-// src/firebaseConfig.js
-
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth"; // ודא שאתה מייבא את זה
-import { getFirestore } from "firebase/firestore"; // אם אתה משתמש ב-Firestore
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBA47MsuIJq_kHtfYMND6nJeXK3zuhpa_k",
@@ -14,11 +12,9 @@ const firebaseConfig = {
   measurementId: "G-7H8776YGZW",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services and EXPORT them
-export const auth = getAuth(app); // *** ודא שיש לך שורה כזו! ***
-export const db = getFirestore(app); // אם אתה משתמש ב-Firestore, ודא שאתה מייצא גם אותו
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 export default app;

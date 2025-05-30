@@ -1,0 +1,35 @@
+.sidebar {
+  width: 240px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-right: 1px solid #e0e0e0;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  color: #262626;
+}
+
+.profile-button:hover {
+  background-color: #fafafa;
+}
+
+.profile-icon {
+  font-size: 18px;
+  color: #262626;
+} 

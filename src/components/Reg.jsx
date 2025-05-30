@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getDatabase, ref, set } from "firebase/database";
-import { auth } from "../firebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
 import profileLogo from "./passport_logo.png";
 import { useNavigate } from "react-router-dom";
 
@@ -33,9 +33,8 @@ export default function Reg() {
       const user = userCredential.user;
       console.log("User registered:", user);
 
-      // כתיבה ל- Realtime Database
-      const db = getDatabase();
-      await set(ref(db, "users/" + user.uid), {
+      // Write to Firestore
+      await setDoc(doc(db, "users", user.uid), {
         fullName: fullName,
         email: email,
       });

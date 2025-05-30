@@ -8,7 +8,7 @@ import Main from "./components/Main";
 import Post from "./components/Post";
 import AddPost from "./components/add-post/AddPost";
 import Profile from "./components/Profile";
-import Feed from "./components/Feed";
+import Feed from "./components/feed/Feed";
 
 function App() {
   return (
@@ -16,9 +16,8 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<Main />} />
-          <Route path="/log" element={<Log />} /> {/* First instance */}
+          <Route path="/log" element={<Log />} />
           <Route path="/reg" element={<Reg />} />
-          <Route path="/log" element={<Log />} /> {/* Duplicate instance */}
           <Route path="/post" element={<Post />} />
           <Route path="/addpost" element={<AddPost />} />
           <Route path="/profile" element={<Profile />} />
