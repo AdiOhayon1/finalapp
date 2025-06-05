@@ -4,20 +4,55 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import profileLogo from "./passport_logo.png";
 import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Log = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
+    // Basic validation
+    if (!email || !password) {
+      toast.error("Please enter both email and password");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Login successful!");
       navigate("/feed");
     } catch (error) {
-      setError(error.message);
+      console.error("Login error:", error);
+      
+      // Handle specific Firebase error codes
+      switch (error.code) {
+        case "auth/invalid-email":
+          toast.error("Invalid email address");
+          break;
+        case "auth/user-disabled":
+          toast.error("This account has been disabled");
+          break;
+        case "auth/user-not-found":
+          toast.error("No account found with this email");
+          break;
+        case "auth/wrong-password":
+          toast.error("Incorrect password");
+          break;
+        case "auth/too-many-requests":
+          toast.error("Too many failed attempts. Please try again later");
+          break;
+        default:
+          toast.error("Failed to login. Please check your credentials");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -27,6 +62,7 @@ const Log = () => {
 
   return (
     <div style={{ position: "relative", width: "100%" }}>
+      <ToastContainer position="top-center" />
       <button
         onClick={handleBackClick}
         style={{
@@ -56,6 +92,7 @@ const Log = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={isLoading}
           />
           <input
             type="password"
@@ -63,11 +100,15 @@ const Log = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={isLoading}
           />
-          <button className="btn btn-primary" type="submit">
-            Login
+          <button 
+            className="btn btn-primary" 
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </button>
-          {error && <p style={{ color: "red" }}>{error}</p>}
         </form>
         <p>
           Not registered yet? <a href="/reg">Register here</a>

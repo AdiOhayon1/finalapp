@@ -8,16 +8,34 @@ const AddPost = ({ onPostCreated }) => {
   const [caption, setCaption] = useState("");
   const [message, setMessage] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [mediaType, setMediaType] = useState("image");
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
+      // Check file type
+      if (!selectedFile.type.startsWith('image/') && !selectedFile.type.startsWith('video/')) {
+        setMessage("Please select an image or video file.");
+        return;
+      }
+
+      // Check file size (50MB limit)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setMessage("File size must be less than 50MB.");
+        return;
+      }
+
       setFile(selectedFile);
+      setMediaType(selectedFile.type.startsWith('video/') ? 'video' : 'image');
+      
+      // Create preview URL
       const fileUrl = URL.createObjectURL(selectedFile);
       setPreviewUrl(fileUrl);
+      setMessage("");
     } else {
       setFile(null);
       setPreviewUrl("");
+      setMediaType("image");
     }
   };
 
@@ -31,7 +49,7 @@ const AddPost = ({ onPostCreated }) => {
     }
 
     if (!file) {
-      setMessage("Please select an image.");
+      setMessage("Please select a file to upload.");
       return;
     }
 
@@ -39,9 +57,9 @@ const AddPost = ({ onPostCreated }) => {
       const token = await user.getIdToken();
 
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("media", file);
       formData.append("caption", caption);
-      formData.append("username", user.email);
+      formData.append("mediaType", mediaType);
 
       await axios.post("http://localhost:5001/posts", formData, {
         headers: {
@@ -54,14 +72,14 @@ const AddPost = ({ onPostCreated }) => {
       setCaption("");
       setFile(null);
       setPreviewUrl("");
+      setMediaType("image");
 
-      // רענון הפיד אחרי העלאת פוסט מוצלחת
       if (onPostCreated) {
         onPostCreated();
       }
     } catch (err) {
       console.error("❌ Upload failed:", err);
-      setMessage("Failed to upload post.");
+      setMessage(err.response?.data?.error || "Failed to upload post.");
     }
   };
 
@@ -80,24 +98,36 @@ const AddPost = ({ onPostCreated }) => {
           <div className="file-upload">
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleFileChange}
               required
               id="file-input"
             />
-            <label htmlFor="file-input" className="file-label">
-              📷
+            <label htmlFor="file-input" className="file-label" title="Upload media">
+              {mediaType === 'video' ? '🎥' : '📷'}
             </label>
           </div>
         </div>
       </div>
       {previewUrl && (
-        <div className="image-preview">
-          <img src={previewUrl} alt="Preview" />
+        <div className="media-preview">
+          {mediaType === 'video' ? (
+            <video 
+              src={previewUrl} 
+              controls 
+              style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '5px' }}
+            />
+          ) : (
+            <img 
+              src={previewUrl} 
+              alt="Preview" 
+              style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '5px', objectFit: 'contain' }}
+            />
+          )}
         </div>
       )}
       <button type="submit">Create Post</button>
-      {message && <p className="message">{message}</p>}
+      {message && <p className={`message ${message.includes('successfully') ? 'success' : 'error'}`}>{message}</p>}
     </form>
   );
 };

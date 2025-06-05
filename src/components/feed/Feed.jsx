@@ -12,6 +12,7 @@ const Feed = () => {
   const [allPosts, setAllPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredPosts, setFilteredPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -20,11 +21,14 @@ const Feed = () => {
   };
 
   const fetchPosts = async () => {
+    setIsLoading(true);
     try {
       const res = await axios.get("http://localhost:5001/posts");
       setAllPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,7 +63,7 @@ const Feed = () => {
         <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         <div className="divider" />
         <AddPost onPostCreated={fetchPosts} />
-        <Posts posts={filteredPosts} />
+        <Posts posts={filteredPosts} onRefresh={fetchPosts} isLoading={isLoading} />
       </div>
     </div>
   );
