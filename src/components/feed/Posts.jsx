@@ -180,15 +180,15 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
             <video 
               className="post-media"
               controls
-              src={`${process.env.REACT_APP_API_URL}/uploads/${post.media}`}
-              poster={`${process.env.REACT_APP_API_URL}/uploads/${post.media.replace(/\.[^/.]+$/, '.jpg')}`}
+              src={`${BASE_URL}${post.media}`}
+              poster={`${BASE_URL}${post.media.replace(/\.[^/.]+$/, '.jpg')}`}
             >
               Your browser does not support the video tag.
             </video>
           ) : (
             <img 
               className="post-media"
-              src={`${process.env.REACT_APP_API_URL}/uploads/${post.media}`}
+              src={`${BASE_URL}${post.media}`}
               alt={post.caption}
             />
           )}
