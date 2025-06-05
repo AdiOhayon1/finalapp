@@ -12,7 +12,7 @@ const Profile = () => {
   const fetchUserPosts = async (email) => {
     try {
       const res = await axios.get(`http://localhost:5001/posts?user=${email}`);
-      setPosts(res.data);
+      setPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch user posts:", err);
     }

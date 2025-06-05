@@ -5,7 +5,7 @@ import SearchBar from "../search-bar/SearchBar";
 import Posts from "./Posts";
 import NavBar from "../nav-bar/NavBar";
 import AddPost from "../add-post/AddPost";
-import passportImage from '../../assets/passport.png';
+import passportImage from "../../assets/passport.png";
 import "./Feed.css";
 
 const Feed = () => {
@@ -22,7 +22,7 @@ const Feed = () => {
   const fetchPosts = async () => {
     try {
       const res = await axios.get("http://localhost:5001/posts");
-      setAllPosts(res.data);
+      setAllPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
     }
