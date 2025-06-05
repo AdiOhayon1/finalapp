@@ -1,6 +1,6 @@
 .sidebar {
   width: 240px;
-  background-color: #ffffff;
+  background-color: #18ddcd2b !important;
   padding: 20px;
   border-right: 1px solid #e0e0e0;
   height: 100vh;
@@ -32,4 +32,4 @@
 .profile-icon {
   font-size: 18px;
   color: #262626;
-} 
+}

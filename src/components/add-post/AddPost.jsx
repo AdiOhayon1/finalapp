@@ -3,7 +3,7 @@ import axios from "axios";
 import { auth } from "../../firebaseConfig";
 import "./addPost.css";
 
-const AddPost = () => {
+const AddPost = ({ onPostCreated }) => {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState("");
   const [message, setMessage] = useState("");
@@ -13,9 +13,11 @@ const AddPost = () => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      // Create preview URL for the selected image
       const fileUrl = URL.createObjectURL(selectedFile);
       setPreviewUrl(fileUrl);
+    } else {
+      setFile(null);
+      setPreviewUrl("");
     }
   };
 
@@ -28,27 +30,43 @@ const AddPost = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("caption", caption);
-    formData.append("username", user.email);
+    if (!file) {
+      setMessage("Please select an image.");
+      return;
+    }
 
     try {
-      await axios.post("http://localhost:5000/posts", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const token = await user.getIdToken();
+
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("caption", caption);
+      formData.append("username", user.email);
+
+      await axios.post("http://localhost:5001/posts", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
       });
+
       setMessage("Post uploaded successfully!");
       setCaption("");
       setFile(null);
       setPreviewUrl("");
+
+      // רענון הפיד אחרי העלאת פוסט מוצלחת
+      if (onPostCreated) {
+        onPostCreated();
+      }
     } catch (err) {
-      console.error("Upload failed:", err);
+      console.error("❌ Upload failed:", err);
       setMessage("Failed to upload post.");
     }
   };
 
   return (
-    <form className="post-form" onSubmit={handleUpload}>
+    <form className="post-form" onSubmit={handleUpload} noValidate>
       <h2>Create Post</h2>
       <div className="input-group">
         <div className="input-with-upload">

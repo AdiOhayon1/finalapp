@@ -1,40 +1,32 @@
-const express = require('express');
-const cors = require('cors');
-const admin = require('firebase-admin');
-const multer = require('multer');
-const path = require('path');
+const express = require("express");
+const cors = require("cors");
+const admin = require("firebase-admin");
+const path = require("path"); // ✅ נדרש לשורת ה־static
 
 const app = express();
 
+// ✅ הגדרות בסיסיות
 app.use(cors());
 app.use(express.json());
 
-const serviceAccount = require('./firebase-service-account.json');
+// ✅ מאפשר גישה לתמונות שהועלו (תיקיית uploads)
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // ✅ הוספנו את זה
+
+// ✅ התחברות ל-Firebase
+const serviceAccount = require("./firebase-service-account.json");
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
 });
 
-const db = admin.firestore();
+// ✅ חיבור למסד Firestore
+const db = admin.firestore(); // אופציונלי כאן
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// ✅ חיבור לראוטים מתוך ./routes/posts
+const postRoutes = require("./routes/posts");
+app.use("/posts", postRoutes);
 
-const upload = multer({ storage: storage });
-
-const postsRouter = require('./routes/posts');
-app.use('/posts', postsRouter);
-
-app.get('/', (req, res) => {
-  res.send('PostPassport API is running');
-});
-
+// ✅ הפעלת השרת
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-}); 
+app.listen(PORT, () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);

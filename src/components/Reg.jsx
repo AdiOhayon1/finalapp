@@ -31,9 +31,7 @@ export default function Reg() {
         password
       );
       const user = userCredential.user;
-      console.log("User registered:", user);
 
-      // Write to Firestore
       await setDoc(doc(db, "users", user.uid), {
         fullName: fullName,
         email: email,
@@ -56,59 +54,83 @@ export default function Reg() {
     navigate("/log");
   };
 
+  const handleBackClick = () => {
+    navigate("/");
+  };
+
   return (
-    <div className="reg form-container">
-      <img src={profileLogo} alt="Profile logo" className="profile-image" />
-      <h2>Register</h2>
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password verification"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
-        <button className="btn btn-primary" type="submit">
-          Register
-        </button>
-      </form>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {registrationSuccess && (
-        <>
-          <p style={{ color: "green", marginTop: "15px" }}>
-            Your registration was successful
-          </p>
-          <button
-            className="btn btn-primary"
-            onClick={handleSignInClick}
-            style={{ marginTop: "10px" }}
-          >
-            Sign In
+    <div style={{ position: "relative", width: "100%" }}>
+      <button
+        onClick={handleBackClick}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          backgroundColor: "rgba(255, 255, 255, 0.5)", // ✅ תואם לרקע של ה־LOG
+          border: "none",
+          borderRadius: "40%",
+          padding: "10px",
+          cursor: "pointer",
+          fontWeight: "bold",
+          fontSize: "20px",
+          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
+        }}
+      >
+        ➤
+      </button>
+
+      <div className="reg form-container">
+        <img src={profileLogo} alt="Profile logo" className="profile-image" />
+        <h2>Register</h2>
+        <form onSubmit={handleRegister}>
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password verification"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          <button className="btn btn-primary" type="submit">
+            Register
           </button>
-        </>
-      )}
-         
+        </form>
+        {error && <p style={{ color: "red" }}>{error}</p>}
+        {registrationSuccess && (
+          <>
+            <p style={{ color: "green", marginTop: "15px" }}>
+              Your registration was successful
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={handleSignInClick}
+              style={{ marginTop: "10px" }}
+            >
+              Sign In
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

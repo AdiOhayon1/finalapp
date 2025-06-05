@@ -31,4 +31,18 @@
   color: #8e8e8e;
   font-size: 16px;
   pointer-events: none;
-} 
+}
+
+.search-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #333;
+  margin-left: 8px;
+  transition: color 0.3s ease;
+}
+
+.search-button:hover {
+  color: #007bff;
+}

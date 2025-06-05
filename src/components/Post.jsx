@@ -34,7 +34,7 @@ export default function Post() {
     formData.append("username", user.email);
 
     try {
-      const res = await axios.post("http://localhost:5000/posts", formData, {
+      const res = await axios.post("http://localhost:5001/posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage("Post created successfully!");
