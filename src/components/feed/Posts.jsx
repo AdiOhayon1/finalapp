@@ -5,15 +5,17 @@ import { auth } from "../../firebaseConfig";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EditPostModal from "./EditPostModal";
-import { FiEdit2, FiTrash2, FiHeart, FiMessageSquare, FiSend } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiHeart, FiMessageSquare, FiSend, FiCornerDownRight } from "react-icons/fi";
 import PostSkeleton from "./PostSkeleton";
 
 const Posts = ({ posts, onRefresh, isLoading }) => {
   const BASE_URL = "http://localhost:5001";
   const [commentInput, setCommentInput] = useState({});
+  const [replyInput, setReplyInput] = useState({});
   const [likesState, setLikesState] = useState({});
   const [editingPost, setEditingPost] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
 
   // Get current user on component mount
   useEffect(() => {
@@ -82,11 +84,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       await axios.post(
         `${BASE_URL}/posts/${postId}/comment`,
         {
-          text: {
-            text: commentInput[postId],
-            user: user.email,
-            createdAt: new Date().toISOString(),
-          },
+          text: commentInput[postId]
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -134,6 +132,90 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
     if (onRefresh) onRefresh();
     setEditingPost(null);
     toast.success("Post updated successfully!");
+  };
+
+  const handleCommentLike = async (postId, commentIndex) => {
+    const user = auth.currentUser;
+    if (!user) {
+      toast.warning("You must be logged in to like comments");
+      return;
+    }
+
+    const post = posts.find(p => p.id === postId);
+    const comment = post.comments[commentIndex];
+    const hasLiked = comment.likes?.includes(user.email);
+    const action = hasLiked ? "unlike" : "like";
+
+    try {
+      const token = await user.getIdToken();
+      await axios.post(
+        `${BASE_URL}/posts/${postId}/comments/${commentIndex}/like`,
+        { action },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (onRefresh) onRefresh();
+      toast.success(hasLiked ? "Comment unliked" : "Comment liked!");
+    } catch (err) {
+      console.error("Error liking comment:", err.response?.data || err.message);
+      toast.error(err.response?.data?.error || "Failed to like comment");
+    }
+  };
+
+  const handleReplyLike = async (postId, commentIndex, replyIndex) => {
+    const user = auth.currentUser;
+    if (!user) {
+      toast.warning("You must be logged in to like replies");
+      return;
+    }
+
+    const post = posts.find(p => p.id === postId);
+    const reply = post.comments[commentIndex].replies[replyIndex];
+    const hasLiked = reply.likes?.includes(user.email);
+    const action = hasLiked ? "unlike" : "like";
+
+    try {
+      const token = await user.getIdToken();
+      await axios.post(
+        `${BASE_URL}/posts/${postId}/comments/${commentIndex}/replies/${replyIndex}/like`,
+        { action },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (onRefresh) onRefresh();
+      toast.success(hasLiked ? "Reply unliked" : "Reply liked!");
+    } catch (err) {
+      console.error("Error liking reply:", err.response?.data || err.message);
+      toast.error(err.response?.data?.error || "Failed to like reply");
+    }
+  };
+
+  const handleReply = async (postId, commentIndex) => {
+    const user = auth.currentUser;
+    if (!user || !replyInput[`${postId}-${commentIndex}`]) return;
+
+    try {
+      const token = await user.getIdToken();
+      await axios.post(
+        `${BASE_URL}/posts/${postId}/comments/${commentIndex}/reply`,
+        {
+          text: replyInput[`${postId}-${commentIndex}`]
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Clear the input after successful reply
+      setReplyInput(prev => ({ ...prev, [`${postId}-${commentIndex}`]: "" }));
+      setReplyingTo(null);
+      
+      // Refresh the posts to show the new reply
+      if (onRefresh) onRefresh();
+      
+      toast.success("Reply added successfully!");
+    } catch (err) {
+      console.error("Error adding reply:", err.response?.data || err.message);
+      toast.error(err.response?.data?.error || "Failed to add reply");
+    }
   };
 
   if (isLoading) {
@@ -224,21 +306,93 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
                         <p className="comment-text">{comment.text}</p>
                       </div>
                       <div className="comment-actions">
-                        <button className="comment-action">Like</button>
-                        <button className="comment-action">Reply</button>
+                        <button 
+                          className={`comment-action ${comment.likes?.includes(currentUser?.email) ? 'liked' : ''}`}
+                          onClick={() => handleCommentLike(post.id, index)}
+                        >
+                          Like {comment.likes?.length > 0 && `(${comment.likes.length})`}
+                        </button>
+                        <button 
+                          className="comment-action"
+                          onClick={() => setReplyingTo(replyingTo === `${post.id}-${index}` ? null : `${post.id}-${index}`)}
+                        >
+                          Reply
+                        </button>
                         <span className="comment-time">
                           {new Date(comment.createdAt).toLocaleDateString()}
                         </span>
                       </div>
+
+                      {/* Replies */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="replies-list">
+                          {comment.replies.map((reply, replyIndex) => (
+                            <div key={replyIndex} className="reply">
+                              <div className="reply-avatar">
+                                {reply.user.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="reply-content">
+                                <div className="reply-bubble">
+                                  <p className="reply-text">{reply.text}</p>
+                                </div>
+                                <div className="reply-actions">
+                                  <button 
+                                    className={`reply-action ${reply.likes?.includes(currentUser?.email) ? 'liked' : ''}`}
+                                    onClick={() => handleReplyLike(post.id, index, replyIndex)}
+                                  >
+                                    Like {reply.likes?.length > 0 && `(${reply.likes.length})`}
+                                  </button>
+                                  <span className="reply-time">
+                                    {new Date(reply.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Reply Input */}
+                      {replyingTo === `${post.id}-${index}` && (
+                        <div className="reply-input-container">
+                          <div className="reply-avatar">
+                            {currentUser?.email?.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="reply-input-wrapper">
+                            <input
+                              type="text"
+                              value={replyInput[`${post.id}-${index}`] || ''}
+                              onChange={(e) => setReplyInput(prev => ({ 
+                                ...prev, 
+                                [`${post.id}-${index}`]: e.target.value 
+                              }))}
+                              placeholder="Write a reply..."
+                              className="reply-input"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleReply(post.id, index);
+                                }
+                              }}
+                            />
+                            <button 
+                              onClick={() => handleReply(post.id, index)}
+                              className="reply-submit-button"
+                              disabled={!replyInput[`${post.id}-${index}`]}
+                              title="Post reply"
+                            >
+                              <FiSend />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
                 {post.comments.length > 6 && (
-                  <>
-                    <div className="comments-divider">
-                      <span>View previous {post.comments.length - 6} comments</span>
-                    </div>
-                  </>
+                  <div className="comments-divider">
+                    <span>View previous {post.comments.length - 6} comments</span>
+                  </div>
                 )}
               </div>
             )}
@@ -257,7 +411,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
                   onChange={(e) => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
                   placeholder="Write a comment..."
                   className="comment-input"
-                  onKeyUp={(e) => {
+                  onKeyPress={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleComment(post.id);

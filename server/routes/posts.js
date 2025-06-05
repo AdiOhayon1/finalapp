@@ -316,6 +316,200 @@ router.post("/:postId/comment", verifyToken, async (req, res) => {
   }
 });
 
+// ✅ Like/Unlike comment endpoint
+router.post("/:postId/comments/:commentIndex/like", verifyToken, async (req, res) => {
+  try {
+    const { postId, commentIndex } = req.params;
+    const { action } = req.body;
+    const postRef = db.collection("posts").doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const postData = postDoc.data();
+    const comment = postData.comments[commentIndex];
+
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const likes = comment.likes || [];
+    const userEmail = req.user.email;
+
+    // Check if user has already liked the comment
+    const hasLiked = likes.includes(userEmail);
+
+    if (action === "like") {
+      if (hasLiked) {
+        return res.status(400).json({ error: "You have already liked this comment" });
+      }
+      // Add user to likes array
+      comment.likes = [...likes, userEmail];
+    } else if (action === "unlike") {
+      if (!hasLiked) {
+        return res.status(400).json({ error: "You haven't liked this comment yet" });
+      }
+      // Remove user from likes array
+      comment.likes = likes.filter(email => email !== userEmail);
+    } else {
+      return res.status(400).json({ error: "Invalid action" });
+    }
+
+    // Update the post with the modified comment
+    const comments = [...postData.comments];
+    comments[commentIndex] = comment;
+    await postRef.update({ comments });
+
+    // Get updated post data
+    const updatedPost = await postRef.get();
+    res.json({
+      id: updatedPost.id,
+      ...updatedPost.data()
+    });
+  } catch (error) {
+    console.error("❌ Error updating comment like:", error);
+    res.status(500).json({ error: "Failed to update comment like" });
+  }
+});
+
+// ✅ Add reply to comment endpoint
+router.post("/:postId/comments/:commentIndex/reply", verifyToken, async (req, res) => {
+  try {
+    const { postId, commentIndex } = req.params;
+    const { text } = req.body;
+    
+    console.log("📝 Reply request received:", {
+      postId,
+      commentIndex,
+      text,
+      user: req.user.email
+    });
+
+    const postRef = db.collection("posts").doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      console.log("❌ Post not found:", postId);
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const postData = postDoc.data();
+    console.log("📄 Post data:", {
+      id: postId,
+      commentsCount: postData.comments?.length || 0
+    });
+
+    const comment = postData.comments[commentIndex];
+
+    if (!comment) {
+      console.log("❌ Comment not found:", {
+        postId,
+        commentIndex,
+        availableComments: postData.comments?.length || 0
+      });
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Create reply with a regular timestamp
+    const reply = {
+      text,
+      user: req.user.email,
+      createdAt: new Date().toISOString(),
+      likes: []
+    };
+
+    // Initialize replies array if it doesn't exist
+    if (!comment.replies) {
+      comment.replies = [];
+    }
+
+    // Add new reply to the array
+    comment.replies.push(reply);
+
+    // Update the post with the modified comment
+    const comments = [...postData.comments];
+    comments[commentIndex] = comment;
+    await postRef.update({ comments });
+
+    console.log("✅ Reply added successfully:", {
+      postId,
+      commentIndex,
+      replyCount: comment.replies.length
+    });
+
+    // Get updated post data
+    const updatedPost = await postRef.get();
+    res.json({
+      id: updatedPost.id,
+      ...updatedPost.data()
+    });
+  } catch (error) {
+    console.error("❌ Error adding reply:", error);
+    res.status(500).json({ error: "Failed to add reply" });
+  }
+});
+
+// ✅ Like/Unlike reply endpoint
+router.post("/:postId/comments/:commentIndex/replies/:replyIndex/like", verifyToken, async (req, res) => {
+  try {
+    const { postId, commentIndex, replyIndex } = req.params;
+    const { action } = req.body;
+    const postRef = db.collection("posts").doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const postData = postDoc.data();
+    const comment = postData.comments[commentIndex];
+
+    if (!comment || !comment.replies || !comment.replies[replyIndex]) {
+      return res.status(404).json({ error: "Reply not found" });
+    }
+
+    const reply = comment.replies[replyIndex];
+    const likes = reply.likes || [];
+    const userEmail = req.user.email;
+
+    // Check if user has already liked the reply
+    const hasLiked = likes.includes(userEmail);
+
+    if (action === "like") {
+      if (hasLiked) {
+        return res.status(400).json({ error: "You have already liked this reply" });
+      }
+      // Add user to likes array
+      reply.likes = [...likes, userEmail];
+    } else if (action === "unlike") {
+      if (!hasLiked) {
+        return res.status(400).json({ error: "You haven't liked this reply yet" });
+      }
+      // Remove user from likes array
+      reply.likes = likes.filter(email => email !== userEmail);
+    } else {
+      return res.status(400).json({ error: "Invalid action" });
+    }
+
+    // Update the post with the modified reply
+    const comments = [...postData.comments];
+    comments[commentIndex].replies[replyIndex] = reply;
+    await postRef.update({ comments });
+
+    // Get updated post data
+    const updatedPost = await postRef.get();
+    res.json({
+      id: updatedPost.id,
+      ...updatedPost.data()
+    });
+  } catch (error) {
+    console.error("❌ Error updating reply like:", error);
+    res.status(500).json({ error: "Failed to update reply like" });
+  }
+});
+
 // ✅ שאר הפונקציות (put, delete, like, comment) ללא שינוי מהותי
 // (נשארו כמו בקוד שלך – תקינים)
 

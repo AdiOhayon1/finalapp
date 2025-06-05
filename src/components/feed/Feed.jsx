@@ -37,9 +37,10 @@ const Feed = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = allPosts.filter((post) =>
-      post.caption?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = allPosts.filter((post) => {
+      // Search only in caption
+      return post.caption?.toLowerCase().includes(searchTerm.toLowerCase());
+    });
     setFilteredPosts(filtered);
   }, [searchTerm, allPosts]);
 
