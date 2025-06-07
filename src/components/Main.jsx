@@ -6,8 +6,8 @@ const Main = () => {
   useEffect(() => {
     fetch("http://localhost:5001/")
       .then((res) => res.text())
-      .then((data) => console.log("✔ API Response:", data))
-      .catch((err) => console.error("❌ API Error:", err));
+      .then((data) => console.log("API Response:", data))
+      .catch((err) => console.error("API Error:", err));
   }, []);
 
   return (

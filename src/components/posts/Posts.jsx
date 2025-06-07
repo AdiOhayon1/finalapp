@@ -63,7 +63,7 @@ const Posts = ({ posts, onRefresh }) => {
       if (err.response?.status === 400) {
         toast.error(err.response.data.error);
       } else {
-        console.error("❌ Error toggling like:", err.response?.data || err.message);
+        console.error("Error toggling like:", err.response?.data || err.message);
         toast.error("Failed to update like");
       }
     }
@@ -90,7 +90,7 @@ const Posts = ({ posts, onRefresh }) => {
       if (onRefresh) onRefresh();
       toast.success("Post deleted successfully!");
     } catch (err) {
-      console.error("❌ Failed to delete post:", err);
+      console.error("Failed to delete post:", err);
       if (err.response?.status === 403) {
         toast.error("You are not authorized to delete this post");
       } else {

@@ -5,7 +5,14 @@ import { auth } from "../../firebaseConfig";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EditPostModal from "./EditPostModal";
-import { FiEdit2, FiTrash2, FiHeart, FiMessageSquare, FiSend, FiCornerDownRight } from "react-icons/fi";
+import {
+  FiEdit2,
+  FiTrash2,
+  FiHeart,
+  FiMessageSquare,
+  FiSend,
+  FiCornerDownRight,
+} from "react-icons/fi";
 import PostSkeleton from "./PostSkeleton";
 
 const Posts = ({ posts, onRefresh, isLoading }) => {
@@ -24,10 +31,10 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       // Initialize likes state when user changes
       if (user && posts) {
         const initialLikesState = {};
-        posts.forEach(post => {
+        posts.forEach((post) => {
           initialLikesState[post.id] = {
             count: post.likes || 0,
-            likedByUser: post.likedBy?.includes(user.email) || false
+            likedByUser: post.likedBy?.includes(user.email) || false,
           };
         });
         setLikesState(initialLikesState);
@@ -56,12 +63,12 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
 
       // Update local state with the server response
       const updatedPost = response.data;
-      setLikesState(prev => ({
+      setLikesState((prev) => ({
         ...prev,
         [postId]: {
           count: updatedPost.likes,
-          likedByUser: updatedPost.likedBy?.includes(user.email) || false
-        }
+          likedByUser: updatedPost.likedBy?.includes(user.email) || false,
+        },
       }));
 
       toast.success(alreadyLiked ? "Post unliked" : "Post liked!");
@@ -69,7 +76,10 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       if (err.response?.status === 400) {
         toast.error(err.response.data.error);
       } else {
-        console.error("❌ Error toggling like:", err.response?.data || err.message);
+        console.error(
+          "❌ Error toggling like:",
+          err.response?.data || err.message
+        );
         toast.error("Failed to update like");
       }
     }
@@ -84,17 +94,17 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       await axios.post(
         `${BASE_URL}/posts/${postId}/comment`,
         {
-          text: commentInput[postId]
+          text: commentInput[postId],
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Clear the input after successful comment
       setCommentInput((prev) => ({ ...prev, [postId]: "" }));
-      
+
       // Refresh the posts to show the new comment
       if (onRefresh) onRefresh();
-      
+
       toast.success("Comment added successfully!");
     } catch (err) {
       console.error("Error adding comment:", err.response?.data || err.message);
@@ -141,7 +151,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       return;
     }
 
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find((p) => p.id === postId);
     const comment = post.comments[commentIndex];
     const hasLiked = comment.likes?.includes(user.email);
     const action = hasLiked ? "unlike" : "like";
@@ -153,7 +163,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
         { action },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (onRefresh) onRefresh();
       toast.success(hasLiked ? "Comment unliked" : "Comment liked!");
     } catch (err) {
@@ -169,7 +179,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       return;
     }
 
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find((p) => p.id === postId);
     const reply = post.comments[commentIndex].replies[replyIndex];
     const hasLiked = reply.likes?.includes(user.email);
     const action = hasLiked ? "unlike" : "like";
@@ -181,7 +191,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
         { action },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (onRefresh) onRefresh();
       toast.success(hasLiked ? "Reply unliked" : "Reply liked!");
     } catch (err) {
@@ -199,18 +209,18 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
       await axios.post(
         `${BASE_URL}/posts/${postId}/comments/${commentIndex}/reply`,
         {
-          text: replyInput[`${postId}-${commentIndex}`]
+          text: replyInput[`${postId}-${commentIndex}`],
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Clear the input after successful reply
-      setReplyInput(prev => ({ ...prev, [`${postId}-${commentIndex}`]: "" }));
+      setReplyInput((prev) => ({ ...prev, [`${postId}-${commentIndex}`]: "" }));
       setReplyingTo(null);
-      
+
       // Refresh the posts to show the new reply
       if (onRefresh) onRefresh();
-      
+
       toast.success("Reply added successfully!");
     } catch (err) {
       console.error("Error adding reply:", err.response?.data || err.message);
@@ -259,16 +269,16 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
             )}
           </div>
           {post.mediaType === "video" ? (
-            <video 
+            <video
               className="post-media"
               controls
               src={`${BASE_URL}${post.media}`}
-              poster={`${BASE_URL}${post.media.replace(/\.[^/.]+$/, '.jpg')}`}
+              poster={`${BASE_URL}${post.media.replace(/\.[^/.]+$/, ".jpg")}`}
             >
               Your browser does not support the video tag.
             </video>
           ) : (
-            <img 
+            <img
               className="post-media"
               src={`${BASE_URL}${post.media}`}
               alt={post.caption}
@@ -276,14 +286,18 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
           )}
           <p className="post-caption">{post.caption}</p>
           <div className="post-actions">
-            <button 
-              className={`like-button ${likesState[post.id]?.likedByUser ? 'liked' : ''}`}
+            <button
+              className={`like-button ${
+                likesState[post.id]?.likedByUser ? "liked" : ""
+              }`}
               onClick={() => handleLike(post.id)}
             >
-              <FiHeart className={likesState[post.id]?.likedByUser ? 'liked-icon' : ''} />
+              <FiHeart
+                className={likesState[post.id]?.likedByUser ? "liked-icon" : ""}
+              />
               <span>{likesState[post.id]?.count ?? post.likes ?? 0}</span>
             </button>
-            <button 
+            <button
               className="comment-button"
               onClick={() => handleComment(post.id)}
             >
@@ -306,15 +320,27 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
                         <p className="comment-text">{comment.text}</p>
                       </div>
                       <div className="comment-actions">
-                        <button 
-                          className={`comment-action ${comment.likes?.includes(currentUser?.email) ? 'liked' : ''}`}
+                        <button
+                          className={`comment-action ${
+                            comment.likes?.includes(currentUser?.email)
+                              ? "liked"
+                              : ""
+                          }`}
                           onClick={() => handleCommentLike(post.id, index)}
                         >
-                          Like {comment.likes?.length > 0 && `(${comment.likes.length})`}
+                          Like{" "}
+                          {comment.likes?.length > 0 &&
+                            `(${comment.likes.length})`}
                         </button>
-                        <button 
+                        <button
                           className="comment-action"
-                          onClick={() => setReplyingTo(replyingTo === `${post.id}-${index}` ? null : `${post.id}-${index}`)}
+                          onClick={() =>
+                            setReplyingTo(
+                              replyingTo === `${post.id}-${index}`
+                                ? null
+                                : `${post.id}-${index}`
+                            )
+                          }
                         >
                           Reply
                         </button>
@@ -336,14 +362,28 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
                                   <p className="reply-text">{reply.text}</p>
                                 </div>
                                 <div className="reply-actions">
-                                  <button 
-                                    className={`reply-action ${reply.likes?.includes(currentUser?.email) ? 'liked' : ''}`}
-                                    onClick={() => handleReplyLike(post.id, index, replyIndex)}
+                                  <button
+                                    className={`reply-action ${
+                                      reply.likes?.includes(currentUser?.email)
+                                        ? "liked"
+                                        : ""
+                                    }`}
+                                    onClick={() =>
+                                      handleReplyLike(
+                                        post.id,
+                                        index,
+                                        replyIndex
+                                      )
+                                    }
                                   >
-                                    Like {reply.likes?.length > 0 && `(${reply.likes.length})`}
+                                    Like{" "}
+                                    {reply.likes?.length > 0 &&
+                                      `(${reply.likes.length})`}
                                   </button>
                                   <span className="reply-time">
-                                    {new Date(reply.createdAt).toLocaleDateString()}
+                                    {new Date(
+                                      reply.createdAt
+                                    ).toLocaleDateString()}
                                   </span>
                                 </div>
                               </div>
@@ -361,21 +401,23 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
                           <div className="reply-input-wrapper">
                             <input
                               type="text"
-                              value={replyInput[`${post.id}-${index}`] || ''}
-                              onChange={(e) => setReplyInput(prev => ({ 
-                                ...prev, 
-                                [`${post.id}-${index}`]: e.target.value 
-                              }))}
+                              value={replyInput[`${post.id}-${index}`] || ""}
+                              onChange={(e) =>
+                                setReplyInput((prev) => ({
+                                  ...prev,
+                                  [`${post.id}-${index}`]: e.target.value,
+                                }))
+                              }
                               placeholder="Write a reply..."
                               className="reply-input"
                               onKeyPress={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
+                                if (e.key === "Enter" && !e.shiftKey) {
                                   e.preventDefault();
                                   handleReply(post.id, index);
                                 }
                               }}
                             />
-                            <button 
+                            <button
                               onClick={() => handleReply(post.id, index)}
                               className="reply-submit-button"
                               disabled={!replyInput[`${post.id}-${index}`]}
@@ -391,7 +433,9 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
                 ))}
                 {post.comments.length > 6 && (
                   <div className="comments-divider">
-                    <span>View previous {post.comments.length - 6} comments</span>
+                    <span>
+                      View previous {post.comments.length - 6} comments
+                    </span>
                   </div>
                 )}
               </div>
@@ -407,18 +451,23 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
               <div className="comment-input-wrapper">
                 <input
                   type="text"
-                  value={commentInput[post.id] || ''}
-                  onChange={(e) => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
+                  value={commentInput[post.id] || ""}
+                  onChange={(e) =>
+                    setCommentInput((prev) => ({
+                      ...prev,
+                      [post.id]: e.target.value,
+                    }))
+                  }
                   placeholder="Write a comment..."
                   className="comment-input"
                   onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleComment(post.id);
                     }
                   }}
                 />
-                <button 
+                <button
                   onClick={() => handleComment(post.id)}
                   className="comment-submit-button"
                   disabled={!commentInput[post.id]}
@@ -431,7 +480,7 @@ const Posts = ({ posts, onRefresh, isLoading }) => {
           </div>
         </div>
       ))}
-      
+
       {editingPost && (
         <EditPostModal
           post={editingPost}

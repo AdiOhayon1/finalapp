@@ -61,6 +61,7 @@ const AddPost = ({ onPostCreated }) => {
       formData.append("caption", caption);
       formData.append("mediaType", mediaType);
 
+      //sent to server
       await axios.post("http://localhost:5001/posts", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -78,7 +79,7 @@ const AddPost = ({ onPostCreated }) => {
         onPostCreated();
       }
     } catch (err) {
-      console.error("❌ Upload failed:", err);
+      console.error("Upload failed:", err);
       setMessage(err.response?.data?.error || "Failed to upload post.");
     }
   };

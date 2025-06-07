@@ -66,7 +66,7 @@ export default function Reg() {
           position: "absolute",
           top: "20px",
           right: "20px",
-          backgroundColor: "rgba(255, 255, 255, 0.5)", // ✅ תואם לרקע של ה־LOG
+          backgroundColor: "rgba(255, 255, 255, 0.5)",
           border: "none",
           borderRadius: "40%",
           padding: "10px",

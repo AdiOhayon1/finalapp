@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { auth } from "../firebaseConfig";
-import { signOut } from "firebase/auth"; // ✅ נוספה השורה הזו
+import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import Posts from "../components/feed/Posts";
 
 const Profile = () => {
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  //שליפת הפוסטים של המשתמש
   const fetchUserPosts = async (email) => {
     try {
+      setIsLoading(true);
       const res = await axios.get(`http://localhost:5001/posts?user=${email}`);
       setPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch user posts:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -36,7 +42,7 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/log"); // ✅ ודא שיש לך נתיב כזה ב־App.js
+      navigate("/log");
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -63,8 +69,9 @@ const Profile = () => {
         ➤
       </button>
 
-      <h2>My profile</h2>
+      <h2>My Profile</h2>
       {user && <p>Email: {user.email}</p>}
+
       <button
         onClick={handleLogout}
         style={{
@@ -81,22 +88,14 @@ const Profile = () => {
       </button>
 
       <h3>My Posts</h3>
-      {posts.length === 0 ? (
+      {posts.length === 0 && !isLoading ? (
         <p>You haven’t posted anything yet.</p>
       ) : (
-        <div className="profile-posts-list">
-          {posts.map((post) => (
-            <div key={post.id} className="post-card">
-              <h4>{post.username}</h4>
-              <img
-                src={`http://localhost:5001${post.image}`}
-                alt="post"
-                className="profile-post-img"
-              />
-              <p>{post.caption}</p>
-            </div>
-          ))}
-        </div>
+        <Posts
+          posts={posts}
+          onRefresh={() => user && fetchUserPosts(user.email)}
+          isLoading={isLoading}
+        />
       )}
     </div>
   );

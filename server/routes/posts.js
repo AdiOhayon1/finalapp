@@ -14,18 +14,24 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     // Generate unique filename with original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 // Configure multer to accept both images and videos
 const fileFilter = (req, file, cb) => {
   // Accept images and videos
-  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("video/")
+  ) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images and videos are allowed.'), false);
+    cb(
+      new Error("Invalid file type. Only images and videos are allowed."),
+      false
+    );
   }
 };
 
@@ -34,10 +40,10 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit for videos
-  }
+  },
 });
 
-// ✅ שליפת פוסטים עם סינון לפי משתמש מחובר
+// ✅ Retrieving posts with filtering by logged in user
 router.get("/", async (req, res) => {
   try {
     const { user } = req.query;
@@ -64,12 +70,12 @@ router.get("/", async (req, res) => {
       posts,
     });
   } catch (error) {
-    console.error("❌ Error getting posts:", error);
+    console.error("Error getting posts:", error);
     res.status(500).json({ error: "Failed to get posts" });
   }
 });
 
-// ✅ יצירת פוסט חדש
+// Add new post
 router.post("/", verifyToken, upload.single("media"), async (req, res) => {
   try {
     const { caption } = req.body;
@@ -85,19 +91,19 @@ router.post("/", verifyToken, upload.single("media"), async (req, res) => {
     }
 
     let mediaUrl;
-    let mediaType = 'image'; // default type
+    let mediaType = "image";
 
     if (file) {
       mediaUrl = `/uploads/${file.filename}`;
       // Determine if the file is a video
-      mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+      mediaType = file.mimetype.startsWith("video/") ? "video" : "image";
     } else {
       mediaUrl = req.body.mediaUrl;
       // Try to determine type from URL
-      mediaType = req.body.mediaType || 'image';
+      mediaType = req.body.mediaType || "image";
     }
 
-    console.log("✅ Creating post for:", req.user.email, "Media type:", mediaType);
+    console.log("Creating post for:", req.user.email, "Media type:", mediaType);
 
     const postData = {
       caption,
@@ -114,8 +120,8 @@ router.post("/", verifyToken, upload.single("media"), async (req, res) => {
     const docRef = await db.collection("posts").add(postData);
     res.status(201).json({ id: docRef.id, ...postData });
   } catch (error) {
-    console.error("❌ Error creating post:", error);
-    if (error.message.includes('Invalid file type')) {
+    console.error("Error creating post:", error);
+    if (error.message.includes("Invalid file type")) {
       res.status(400).json({ error: error.message });
     } else {
       res.status(500).json({ error: "Failed to create post" });
@@ -123,7 +129,7 @@ router.post("/", verifyToken, upload.single("media"), async (req, res) => {
   }
 });
 
-// ✅ מחיקת פוסט
+// Delete post
 router.delete("/:postId", verifyToken, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -135,20 +141,22 @@ router.delete("/:postId", verifyToken, async (req, res) => {
     }
 
     const postData = postDoc.data();
-    
+
     // Check if the user is authorized to delete the post
     if (postData.email !== req.user.email) {
-      return res.status(403).json({ error: "Unauthorized to delete this post" });
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to delete this post" });
     }
 
     // Delete the post
     await postRef.delete();
-    
-    // If the post had an uploaded media, delete it from the uploads folder
-    if (postData.media && postData.media.startsWith('/uploads/')) {
-      const mediaPath = path.join(__dirname, '..', postData.media);
+
+    // If the post had an uploaded media, delete it from the uploads folder!
+    if (postData.media && postData.media.startsWith("/uploads/")) {
+      const mediaPath = path.join(__dirname, "..", postData.media);
       try {
-        await fs.promises.unlink(mediaPath);
+        await fs.promises.unlink(mediaPath); //delete file from the server
       } catch (err) {
         console.error("Warning: Could not delete media file:", err);
       }
@@ -156,71 +164,80 @@ router.delete("/:postId", verifyToken, async (req, res) => {
 
     res.json({ message: "Post deleted successfully" });
   } catch (error) {
-    console.error("❌ Error deleting post:", error);
+    console.error("Error deleting post:", error);
     res.status(500).json({ error: "Failed to delete post" });
   }
 });
 
-// ✅ עריכת פוסט
-router.put("/:postId", verifyToken, upload.single("media"), async (req, res) => {
-  try {
-    const { postId } = req.params;
-    const { caption, mediaType } = req.body;
-    const postRef = db.collection("posts").doc(postId);
-    const postDoc = await postRef.get();
+// Edit post
+router.put(
+  "/:postId",
+  verifyToken,
+  upload.single("media"),
+  async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { caption, mediaType } = req.body;
+      const postRef = db.collection("posts").doc(postId);
+      const postDoc = await postRef.get();
 
-    if (!postDoc.exists) {
-      return res.status(404).json({ error: "Post not found" });
-    }
-
-    const postData = postDoc.data();
-    
-    if (postData.email !== req.user.email) {
-      return res.status(403).json({ error: "Unauthorized to edit this post" });
-    }
-
-    const updateData = {
-      caption,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Handle media update
-    if (req.file) {
-      updateData.media = `/uploads/${req.file.filename}`;
-      updateData.mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
-      
-      // Delete the old media file if it exists
-      if (postData.media && postData.media.startsWith('/uploads/')) {
-        const oldMediaPath = path.join(__dirname, '..', postData.media);
-        try {
-          await fs.promises.unlink(oldMediaPath);
-        } catch (err) {
-          console.error("Warning: Could not delete old media file:", err);
-        }
+      if (!postDoc.exists) {
+        return res.status(404).json({ error: "Post not found" });
       }
-    } else if (req.body.mediaUrl) {
-      updateData.media = req.body.mediaUrl;
-      updateData.mediaType = mediaType || 'image';
-    }
 
-    await postRef.update(updateData);
-    
-    const updatedPost = await postRef.get();
-    res.json({
-      id: updatedPost.id,
-      ...updatedPost.data()
-    });
-  } catch (error) {
-    console.error("❌ Error updating post:", error);
-    if (error.message.includes('Invalid file type')) {
-      res.status(400).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: "Failed to update post" });
+      const postData = postDoc.data();
+
+      if (postData.email !== req.user.email) {
+        return res
+          .status(403)
+          .json({ error: "Unauthorized to edit this post" });
+      }
+
+      const updateData = {
+        caption,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Handle media update
+      if (req.file) {
+        updateData.media = `/uploads/${req.file.filename}`;
+        updateData.mediaType = req.file.mimetype.startsWith("video/")
+          ? "video"
+          : "image";
+
+        // Delete the old media file if it exists
+        if (postData.media && postData.media.startsWith("/uploads/")) {
+          const oldMediaPath = path.join(__dirname, "..", postData.media);
+          try {
+            await fs.promises.unlink(oldMediaPath);
+          } catch (err) {
+            console.error("Warning: Could not delete old media file:", err);
+          }
+        }
+      } else if (req.body.mediaUrl) {
+        updateData.media = req.body.mediaUrl;
+        updateData.mediaType = mediaType || "image";
+      }
+
+      await postRef.update(updateData);
+
+      const updatedPost = await postRef.get();
+      res.json({
+        id: updatedPost.id,
+        ...updatedPost.data(),
+      });
+    } catch (error) {
+      console.error("Error updating post:", error);
+      if (error.message.includes("Invalid file type")) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to update post" });
+      }
     }
   }
-});
+);
 
-// ✅ Like/Unlike post endpoint
+// Like/Unlike post endpoint
 router.post("/:postId/like", verifyToken, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -241,21 +258,25 @@ router.post("/:postId/like", verifyToken, async (req, res) => {
 
     if (action === "like") {
       if (hasLiked) {
-        return res.status(400).json({ error: "You have already liked this post" });
+        return res
+          .status(400)
+          .json({ error: "You have already liked this post" });
       }
       // Add user to likedBy array and increment likes
       await postRef.update({
         likes: admin.firestore.FieldValue.increment(1),
-        likedBy: admin.firestore.FieldValue.arrayUnion(userEmail)
+        likedBy: admin.firestore.FieldValue.arrayUnion(userEmail),
       });
     } else if (action === "unlike") {
       if (!hasLiked) {
-        return res.status(400).json({ error: "You haven't liked this post yet" });
+        return res
+          .status(400)
+          .json({ error: "You haven't liked this post yet" });
       }
       // Remove user from likedBy array and decrement likes
       await postRef.update({
         likes: admin.firestore.FieldValue.increment(-1),
-        likedBy: admin.firestore.FieldValue.arrayRemove(userEmail)
+        likedBy: admin.firestore.FieldValue.arrayRemove(userEmail),
       });
     } else {
       return res.status(400).json({ error: "Invalid action" });
@@ -265,15 +286,15 @@ router.post("/:postId/like", verifyToken, async (req, res) => {
     const updatedPost = await postRef.get();
     res.json({
       id: updatedPost.id,
-      ...updatedPost.data()
+      ...updatedPost.data(),
     });
   } catch (error) {
-    console.error("❌ Error updating like:", error);
+    console.error("Error updating like:", error);
     res.status(500).json({ error: "Failed to update like" });
   }
 });
 
-// ✅ Add comment to post endpoint
+// Add comment to post endpoint
 router.post("/:postId/comment", verifyToken, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -287,9 +308,9 @@ router.post("/:postId/comment", verifyToken, async (req, res) => {
 
     // Create comment with a regular timestamp instead of serverTimestamp
     const comment = {
-      text: text.text,
+      text: text,
       user: req.user.email,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     // Get current comments array
@@ -301,216 +322,233 @@ router.post("/:postId/comment", verifyToken, async (req, res) => {
 
     // Update the post with the new comments array
     await postRef.update({
-      comments: updatedComments
+      comments: updatedComments,
     });
 
     // Get updated post data
     const updatedPost = await postRef.get();
     res.json({
       id: updatedPost.id,
-      ...updatedPost.data()
+      ...updatedPost.data(),
     });
   } catch (error) {
-    console.error("❌ Error adding comment:", error);
+    console.error("Error adding comment:", error);
     res.status(500).json({ error: "Failed to add comment" });
   }
 });
 
-// ✅ Like/Unlike comment endpoint
-router.post("/:postId/comments/:commentIndex/like", verifyToken, async (req, res) => {
-  try {
-    const { postId, commentIndex } = req.params;
-    const { action } = req.body;
-    const postRef = db.collection("posts").doc(postId);
-    const postDoc = await postRef.get();
+// Like/Unlike comment endpoint
+router.post(
+  "/:postId/comments/:commentIndex/like",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { postId, commentIndex } = req.params;
+      const { action } = req.body;
+      const postRef = db.collection("posts").doc(postId);
+      const postDoc = await postRef.get();
 
-    if (!postDoc.exists) {
-      return res.status(404).json({ error: "Post not found" });
-    }
-
-    const postData = postDoc.data();
-    const comment = postData.comments[commentIndex];
-
-    if (!comment) {
-      return res.status(404).json({ error: "Comment not found" });
-    }
-
-    const likes = comment.likes || [];
-    const userEmail = req.user.email;
-
-    // Check if user has already liked the comment
-    const hasLiked = likes.includes(userEmail);
-
-    if (action === "like") {
-      if (hasLiked) {
-        return res.status(400).json({ error: "You have already liked this comment" });
+      if (!postDoc.exists) {
+        return res.status(404).json({ error: "Post not found" });
       }
-      // Add user to likes array
-      comment.likes = [...likes, userEmail];
-    } else if (action === "unlike") {
-      if (!hasLiked) {
-        return res.status(400).json({ error: "You haven't liked this comment yet" });
+
+      const postData = postDoc.data();
+      const comment = postData.comments[commentIndex];
+
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
       }
-      // Remove user from likes array
-      comment.likes = likes.filter(email => email !== userEmail);
-    } else {
-      return res.status(400).json({ error: "Invalid action" });
+
+      const likes = comment.likes || [];
+      const userEmail = req.user.email;
+
+      // Check if user has already liked the comment
+      const hasLiked = likes.includes(userEmail);
+
+      if (action === "like") {
+        if (hasLiked) {
+          return res
+            .status(400)
+            .json({ error: "You have already liked this comment" });
+        }
+        // Add user to likes array
+        comment.likes = [...likes, userEmail];
+      } else if (action === "unlike") {
+        if (!hasLiked) {
+          return res
+            .status(400)
+            .json({ error: "You haven't liked this comment yet" });
+        }
+        // Remove user from likes array
+        comment.likes = likes.filter((email) => email !== userEmail);
+      } else {
+        return res.status(400).json({ error: "Invalid action" });
+      }
+
+      // Update the post with the modified comment
+      const comments = [...postData.comments];
+      comments[commentIndex] = comment;
+      await postRef.update({ comments });
+
+      // Get updated post data
+      const updatedPost = await postRef.get();
+      res.json({
+        id: updatedPost.id,
+        ...updatedPost.data(),
+      });
+    } catch (error) {
+      console.error("Error updating comment like:", error);
+      res.status(500).json({ error: "Failed to update comment like" });
     }
-
-    // Update the post with the modified comment
-    const comments = [...postData.comments];
-    comments[commentIndex] = comment;
-    await postRef.update({ comments });
-
-    // Get updated post data
-    const updatedPost = await postRef.get();
-    res.json({
-      id: updatedPost.id,
-      ...updatedPost.data()
-    });
-  } catch (error) {
-    console.error("❌ Error updating comment like:", error);
-    res.status(500).json({ error: "Failed to update comment like" });
   }
-});
+);
 
 // ✅ Add reply to comment endpoint
-router.post("/:postId/comments/:commentIndex/reply", verifyToken, async (req, res) => {
-  try {
-    const { postId, commentIndex } = req.params;
-    const { text } = req.body;
-    
-    console.log("📝 Reply request received:", {
-      postId,
-      commentIndex,
-      text,
-      user: req.user.email
-    });
+router.post(
+  "/:postId/comments/:commentIndex/reply",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { postId, commentIndex } = req.params;
+      const { text } = req.body;
 
-    const postRef = db.collection("posts").doc(postId);
-    const postDoc = await postRef.get();
-
-    if (!postDoc.exists) {
-      console.log("❌ Post not found:", postId);
-      return res.status(404).json({ error: "Post not found" });
-    }
-
-    const postData = postDoc.data();
-    console.log("📄 Post data:", {
-      id: postId,
-      commentsCount: postData.comments?.length || 0
-    });
-
-    const comment = postData.comments[commentIndex];
-
-    if (!comment) {
-      console.log("❌ Comment not found:", {
+      console.log("Reply request received:", {
         postId,
         commentIndex,
-        availableComments: postData.comments?.length || 0
+        text,
+        user: req.user.email,
       });
-      return res.status(404).json({ error: "Comment not found" });
-    }
 
-    // Create reply with a regular timestamp
-    const reply = {
-      text,
-      user: req.user.email,
-      createdAt: new Date().toISOString(),
-      likes: []
-    };
+      const postRef = db.collection("posts").doc(postId);
+      const postDoc = await postRef.get();
 
-    // Initialize replies array if it doesn't exist
-    if (!comment.replies) {
-      comment.replies = [];
-    }
-
-    // Add new reply to the array
-    comment.replies.push(reply);
-
-    // Update the post with the modified comment
-    const comments = [...postData.comments];
-    comments[commentIndex] = comment;
-    await postRef.update({ comments });
-
-    console.log("✅ Reply added successfully:", {
-      postId,
-      commentIndex,
-      replyCount: comment.replies.length
-    });
-
-    // Get updated post data
-    const updatedPost = await postRef.get();
-    res.json({
-      id: updatedPost.id,
-      ...updatedPost.data()
-    });
-  } catch (error) {
-    console.error("❌ Error adding reply:", error);
-    res.status(500).json({ error: "Failed to add reply" });
-  }
-});
-
-// ✅ Like/Unlike reply endpoint
-router.post("/:postId/comments/:commentIndex/replies/:replyIndex/like", verifyToken, async (req, res) => {
-  try {
-    const { postId, commentIndex, replyIndex } = req.params;
-    const { action } = req.body;
-    const postRef = db.collection("posts").doc(postId);
-    const postDoc = await postRef.get();
-
-    if (!postDoc.exists) {
-      return res.status(404).json({ error: "Post not found" });
-    }
-
-    const postData = postDoc.data();
-    const comment = postData.comments[commentIndex];
-
-    if (!comment || !comment.replies || !comment.replies[replyIndex]) {
-      return res.status(404).json({ error: "Reply not found" });
-    }
-
-    const reply = comment.replies[replyIndex];
-    const likes = reply.likes || [];
-    const userEmail = req.user.email;
-
-    // Check if user has already liked the reply
-    const hasLiked = likes.includes(userEmail);
-
-    if (action === "like") {
-      if (hasLiked) {
-        return res.status(400).json({ error: "You have already liked this reply" });
+      if (!postDoc.exists) {
+        console.log("Post not found:", postId);
+        return res.status(404).json({ error: "Post not found" });
       }
-      // Add user to likes array
-      reply.likes = [...likes, userEmail];
-    } else if (action === "unlike") {
-      if (!hasLiked) {
-        return res.status(400).json({ error: "You haven't liked this reply yet" });
+
+      const postData = postDoc.data();
+      console.log("Post data:", {
+        id: postId,
+        commentsCount: postData.comments?.length || 0,
+      });
+
+      const comment = postData.comments[commentIndex];
+
+      if (!comment) {
+        console.log("Comment not found:", {
+          postId,
+          commentIndex,
+          availableComments: postData.comments?.length || 0,
+        });
+        return res.status(404).json({ error: "Comment not found" });
       }
-      // Remove user from likes array
-      reply.likes = likes.filter(email => email !== userEmail);
-    } else {
-      return res.status(400).json({ error: "Invalid action" });
+
+      // Create reply with a regular timestamp
+      const reply = {
+        text,
+        user: req.user.email,
+        createdAt: new Date().toISOString(),
+        likes: [],
+      };
+
+      // Initialize replies array if it doesn't exist
+      if (!comment.replies) {
+        comment.replies = [];
+      }
+
+      // Add new reply to the array
+      comment.replies.push(reply);
+
+      // Update the post with the modified comment
+      const comments = [...postData.comments];
+      comments[commentIndex] = comment;
+      await postRef.update({ comments });
+
+      console.log("Reply added successfully:", {
+        postId,
+        commentIndex,
+        replyCount: comment.replies.length,
+      });
+
+      // Get updated post data
+      const updatedPost = await postRef.get();
+      res.json({
+        id: updatedPost.id,
+        ...updatedPost.data(),
+      });
+    } catch (error) {
+      console.error("Error adding reply:", error);
+      res.status(500).json({ error: "Failed to add reply" });
     }
-
-    // Update the post with the modified reply
-    const comments = [...postData.comments];
-    comments[commentIndex].replies[replyIndex] = reply;
-    await postRef.update({ comments });
-
-    // Get updated post data
-    const updatedPost = await postRef.get();
-    res.json({
-      id: updatedPost.id,
-      ...updatedPost.data()
-    });
-  } catch (error) {
-    console.error("❌ Error updating reply like:", error);
-    res.status(500).json({ error: "Failed to update reply like" });
   }
-});
+);
 
-// ✅ שאר הפונקציות (put, delete, like, comment) ללא שינוי מהותי
-// (נשארו כמו בקוד שלך – תקינים)
+// Like/Unlike reply endpoint
+router.post(
+  "/:postId/comments/:commentIndex/replies/:replyIndex/like",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { postId, commentIndex, replyIndex } = req.params;
+      const { action } = req.body;
+      const postRef = db.collection("posts").doc(postId);
+      const postDoc = await postRef.get();
+
+      if (!postDoc.exists) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      const postData = postDoc.data();
+      const comment = postData.comments[commentIndex];
+
+      if (!comment || !comment.replies || !comment.replies[replyIndex]) {
+        return res.status(404).json({ error: "Reply not found" });
+      }
+
+      const reply = comment.replies[replyIndex];
+      const likes = reply.likes || [];
+      const userEmail = req.user.email;
+
+      // Check if user has already liked the reply
+      const hasLiked = likes.includes(userEmail);
+
+      if (action === "like") {
+        if (hasLiked) {
+          return res
+            .status(400)
+            .json({ error: "You have already liked this reply" });
+        }
+        // Add user to likes array
+        reply.likes = [...likes, userEmail];
+      } else if (action === "unlike") {
+        if (!hasLiked) {
+          return res
+            .status(400)
+            .json({ error: "You haven't liked this reply yet" });
+        }
+        // Remove user from likes array
+        reply.likes = likes.filter((email) => email !== userEmail);
+      } else {
+        return res.status(400).json({ error: "Invalid action" });
+      }
+
+      // Update the post with the modified reply
+      const comments = [...postData.comments];
+      comments[commentIndex].replies[replyIndex] = reply;
+      await postRef.update({ comments });
+
+      // Get updated post data
+      const updatedPost = await postRef.get();
+      res.json({
+        id: updatedPost.id,
+        ...updatedPost.data(),
+      });
+    } catch (error) {
+      console.error("Error updating reply like:", error);
+      res.status(500).json({ error: "Failed to update reply like" });
+    }
+  }
+);
 
 module.exports = router;
